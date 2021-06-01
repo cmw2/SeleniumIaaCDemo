@@ -1,0 +1,68 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none
+
+resources:
+  pipelines:
+    - pipeline: ci
+      source: AdvancedSeleniumDemo-CI
+      trigger:
+        branches:
+          include:
+            - master
+
+stages:
+- stage: Test
+  jobs:
+  - deployment: DeployTest
+    displayName: 'Deploy to Test (App Service)'
+    dependsOn: []
+    pool:
+      vmImage: 'windows-latest'
+    variables:
+    - group: AdvancedSeleniumDemo-Test
+    environment:
+      name:  AdvSelDemoTest
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: AzureResourceManagerTemplateDeployment@3
+              inputs:
+                deploymentScope: 'Resource Group'
+                azureResourceManagerConnection: 'CMWMS Visual Studio Enterprise'
+                subscriptionId: '225c54ba-5493-4ab0-9cf1-5f47ce03e3ef'
+                action: 'Create Or Update Resource Group'
+                resourceGroupName: '$(ResourceGroupName)'
+                location: '$(ResourceGroupLocation)'
+                templateLocation: 'Linked artifact'
+                csmFile: '$(Pipeline.Workspace)/ci/drop/WebSiteSQLDatabase.json'
+                csmParametersFile: '$(Pipeline.Workspace)/ci/drop/WebSiteSQLDatabase.parameters.json'
+                overrideParameters: '-hostingPlanName $(HostingPlanName) -webAppName $(WebAppName) -administratorLogin $(DatabaseServerUser) -administratorLoginPassword $(DatabaseServerPwd) -dbServerName $(DBServerName) -databaseName $(DatabaseName) -connectionStringName $(ConnectionStringName)'
+                deploymentMode: 'Incremental'
+
+            - task: AzureWebApp@1
+              inputs:
+                azureSubscription: 'CMWMS Visual Studio Enterprise'
+                appType: 'webApp'
+                appName: $(WebAppName)
+                package: '$(Pipeline.Workspace)/ci/drop/*.zip'
+                deploymentMethod: 'zipDeploy'
+
+            - task: DotNetCoreCLI@2
+              displayName: Run UI Tests
+              inputs:
+                command: 'test'
+                arguments: '--filter TestCategory=UITest'
+                workingDirectory: '$(Pipeline.Workspace)/ci/drop/Tests'
+
+            # - task: AzureResourceManagerTemplateDeployment@3
+            #   inputs:
+            #     deploymentScope: 'Resource Group'
+            #     azureResourceManagerConnection: 'CMWMS Visual Studio Enterprise'
+            #     subscriptionId: '225c54ba-5493-4ab0-9cf1-5f47ce03e3ef'
+            #     action: 'DeleteRG'
+            #     resourceGroupName: '$(ResourceGroupName)'

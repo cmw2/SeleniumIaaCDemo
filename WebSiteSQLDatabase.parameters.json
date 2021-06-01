@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "hostingPlanName": {
+      "value": "seldemo-plan"
+    },
+    "skuName": {
+        "value": "F1"
+    },
+    "skuCapacity": {
+        "value": 1
+    },
+    "webAppName": {
+        "value": "seldemo-app"
+    },
+    "administratorLogin": {
+      "value": "chwestbr"
+    },
+    "administratorLoginPassword": {
+        "value": "overridethis"
+    },
+    "dbServerName": {
+        "value": "seldemo-sqlsvr" 
+    },
+    "databaseName": {
+      "value": "movies"
+    },
+    "connectionStringName":{
+      "value": "DefaultConnection"
+    }
+  }
+}

@@ -1,0 +1,69 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none
+
+resources:
+  pipelines:
+    - pipeline: ci
+      source: AdvancedSeleniumDemo-CI
+
+stages:
+- stage: Test
+  jobs:
+  - deployment: DeployTest
+    displayName: 'Deploy to Test (App Service)'
+    dependsOn: []
+    pool:
+      vmImage: 'windows-latest'
+    variables:
+    - group: AdvancedSeleniumDemo-Test
+    environment:
+      name:  AdvSelDemoTest
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            # - task: AzureResourceManagerTemplateDeployment@3
+            #   inputs:
+            #     deploymentScope: 'Resource Group'
+            #     azureResourceManagerConnection: 'Visual Studio Enterprise (225c54ba-5493-4ab0-9cf1-5f47ce03e3ef)'
+            #     subscriptionId: '225c54ba-5493-4ab0-9cf1-5f47ce03e3ef'
+            #     action: 'Create Or Update Resource Group'
+            #     resourceGroupName: '$(ResourceGroupName)'
+            #     location: '$(ResourceGroupLocation)'
+            #     templateLocation: 'Linked artifact'
+            #     csmFile: '$(Pipeline.Workspace)/ci/drop/WebSiteSQLDatabase.json'
+            #     csmParametersFile: '$(Pipeline.Workspace)/ci/drop/WebSiteSQLDatabase.parameters.json'
+            #     overrideParameters: '-hostingPlanName $(HostingPlanName) -webAppName $(WebAppName) -administratorLogin $(DatabaseServerUser) -administratorLoginPassword $(DatabaseServerPwd) -dbServerName $(DBServerName) -databaseName $(DatabaseName) -connectionStringName $(ConnectionStringName)'
+            #     deploymentMode: 'Incremental'
+
+            # - task: AzureWebApp@1
+            #   inputs:
+            #     azureSubscription: 'Visual Studio Enterprise (225c54ba-5493-4ab0-9cf1-5f47ce03e3ef)'
+            #     appType: 'webApp'
+            #     appName: $(WebAppName)
+            #     package: '$(Pipeline.Workspace)/ci/drop/*.zip'
+            #     deploymentMethod: 'zipDeploy'
+
+            - task: VSTest@2
+              inputs:
+                testSelector: 'testAssemblies'
+                testAssemblyVer2: |
+                  **\*test*.dll
+                  !**\*TestAdapter.dll
+                  !**\obj\**
+                searchFolder: '$(Pipeline.Workspace)/ci/drop/Tests'
+                testFiltercriteria: 'TestCategory=UITest'
+                uiTests: true
+                runSettingsFile: '$(Pipeline.Workspace)/ci/drop/Tests/.runsettings'
+
+            # - task: AzureResourceManagerTemplateDeployment@3
+            #   inputs:
+            #     deploymentScope: 'Resource Group'
+            #     azureResourceManagerConnection: 'Visual Studio Enterprise (225c54ba-5493-4ab0-9cf1-5f47ce03e3ef)'
+            #     subscriptionId: '225c54ba-5493-4ab0-9cf1-5f47ce03e3ef'
+            #     action: 'DeleteRG'
+            #     resourceGroupName: '$(ResourceGroupName)'
